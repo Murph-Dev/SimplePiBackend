@@ -1,12 +1,21 @@
 from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from pydantic import BaseModel
+
+class ArduinoSensorData(BaseModel):
+    """Model to receive Arduino data with original field names"""
+    temperature: float
+    humidity: float
+    lux: int
+    pumpActive: bool
+    lastReading: int
 
 class SensorDataBase(SQLModel):
     temperature: float = Field(description="Temperature reading")
     humidity: float = Field(description="Humidity reading")
     lux: int = Field(description="Light level in lux")
-    pump_active: bool = Field(alias="pumpActive", description="Pump status")
+    pump_active: bool = Field(description="Pump status")
     last_reading: int = Field(description="Last reading timestamp")
     device_id: Optional[str] = Field(default=None, max_length=50, description="Device identifier")
 

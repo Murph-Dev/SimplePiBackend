@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import List, Optional
 from sqlmodel import select
-from .models import SensorData, SensorDataCreate, SensorDataUpdate
+from .models import SensorData, SensorDataCreate, SensorDataUpdate, ArduinoSensorData
 from .db import init_db, get_session
 import os
 
@@ -39,13 +39,20 @@ def session_dep():
 
 # ------------------ Sensor Data API ------------------
 @app.post("/api/v1/sensor-data", response_model=SensorData, status_code=201)
-def create_sensor_data(payload: SensorDataCreate, request: Request, session: Session = Depends(session_dep)):
+def create_sensor_data(payload: ArduinoSensorData, request: Request, session: Session = Depends(session_dep)):
     # Extract device_id from headers if present
     device_id = request.headers.get("X-Device-ID")
-    if device_id:
-        payload.device_id = device_id
     
-    sensor_data = SensorData(**payload.dict())
+    # Convert Arduino field names to our database field names
+    sensor_data = SensorData(
+        temperature=payload.temperature,
+        humidity=payload.humidity,
+        lux=payload.lux,
+        pump_active=payload.pumpActive,
+        last_reading=payload.lastReading,
+        device_id=device_id
+    )
+    
     session.add(sensor_data)
     session.commit()
     session.refresh(sensor_data)
