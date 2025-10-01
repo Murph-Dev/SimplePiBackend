@@ -45,15 +45,15 @@ The backend expects JSON data from your Arduino in this format:
   - Content-Type: `application/json`
 
 ### Web Dashboard API
-- `GET /api/sensor-data` - List all sensor readings
-- `GET /api/sensor-data/{id}` - Get specific reading
-- `PUT /api/sensor-data/{id}` - Update reading
-- `DELETE /api/sensor-data/{id}` - Delete reading
-- `GET /api/health` - Health check
+- `GET /api/v1/sensor-data` - List all sensor readings
+- `GET /api/v1/sensor-data/{id}` - Get specific reading
+- `PUT /api/v1/sensor-data/{id}` - Update reading
+- `DELETE /api/v1/sensor-data/{id}` - Delete reading
+- `GET /api/v1/health` - Health check
 
 ### Watering Control API
-- `GET /api/watering/{device_id}` - Get current watering status and settings for a device
-- `PUT /api/watering` - Update watering status and settings
+- `GET /api/v1/watering/{device_id}` - Get current watering status and settings for a device
+- `PUT /api/v1/watering` - Update watering status and settings
 
 ## Quick Start
 
@@ -115,7 +115,7 @@ The backend includes a watering control system that tracks:
 - **Timestamp**: Unix timestamp of the last update
 
 ### Arduino Integration
-Your Arduino can control the watering system by sending PUT requests to `/api/watering`:
+Your Arduino can control the watering system by sending PUT requests to `/api/v1/watering`:
 
 ```json
 {
