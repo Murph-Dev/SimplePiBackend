@@ -96,23 +96,26 @@ Your Arduino code should work with the new payload structure. The backend:
 
 ## Web Dashboard Features
 
-- **Latest Readings**: Real-time display of current sensor values
-- **Watering Status**: Live watering system status with pump state and last watering time
+- **Latest Readings**: Real-time display of current sensor values including integrated pump/watering status
 - **Data History**: Table view of all stored readings with filtering
 - **Edit Capability**: Modify existing sensor readings
 - **Delete Records**: Remove old or incorrect data
-- **Auto-refresh**: Dashboard updates every 30 seconds, watering status every 5 seconds
+- **Auto-refresh**: Dashboard updates every 30 seconds, pump status every 5 seconds
 - **Responsive Design**: Works on desktop, tablet, and mobile
 
 ## Watering System Integration
 
 The backend includes a watering control system that tracks:
-- **Pump Status**: Current state (active/inactive)
+- **Pump Status**: Current state (active/inactive) - displayed in the main dashboard with green/red indicators
 - **Last Watering**: ISO timestamp of the last watering session
 - **Watering Duration**: How long the pump runs (in seconds)
 - **Auto Watering**: Whether automatic watering is enabled
 - **Device ID**: Identifier for the specific device
 - **Timestamp**: Unix timestamp of the last update
+
+The pump status in the "Latest Sensor Readings" section now shows the real-time watering system status:
+- 🟢 **Active**: Pump is currently running
+- 🔴 **Inactive**: Pump is stopped
 
 ### Arduino Integration
 Your Arduino can control the watering system by sending PUT requests to `/api/v1/watering`:

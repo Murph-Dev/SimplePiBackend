@@ -33,30 +33,12 @@ function formatLux(lux){
   return `${lux} lux`;
 }
 
-function formatPumpStatus(pump){
-  return pump ? '🟢 Active' : '🔴 Inactive';
+function formatPumpStatus(pump, wateringData){
+  // Use watering data if available, otherwise use sensor data
+  const isActive = wateringData ? wateringData.pump_active : pump;
+  return isActive ? '🟢 Active' : '🔴 Inactive';
 }
 
-function formatWateringStatus(wateringData){
-  if (!wateringData) return '--';
-  
-  const now = new Date();
-  const lastWatering = wateringData.last_watering ? new Date(wateringData.last_watering) : null;
-  
-  let status = wateringData.pump_active ? '💧 Watering' : '⏸️ Idle';
-  
-  if (lastWatering) {
-    const diffMinutes = Math.floor((now - lastWatering) / (1000 * 60));
-    if (diffMinutes < 60) {
-      status += ` (${diffMinutes}m ago)`;
-    } else {
-      const diffHours = Math.floor(diffMinutes / 60);
-      status += ` (${diffHours}h ago)`;
-    }
-  }
-  
-  return status;
-}
 
 async function updateLatestReadings(sensors){
   if(sensors.length === 0) return;
@@ -65,15 +47,15 @@ async function updateLatestReadings(sensors){
   $('#latest-temp').textContent = formatTemperature(latest.temperature);
   $('#latest-humidity').textContent = formatHumidity(latest.humidity);
   $('#latest-lux').textContent = formatLux(latest.lux);
-  $('#latest-pump').textContent = formatPumpStatus(latest.pump_active);
   
-  // Update watering status
+  // Fetch watering data and update pump status
   try {
     const wateringData = await api.getWatering();
-    $('#latest-watering').textContent = formatWateringStatus(wateringData);
+    $('#latest-pump').textContent = formatPumpStatus(latest.pump_active, wateringData);
   } catch (error) {
     console.error('Failed to load watering data:', error);
-    $('#latest-watering').textContent = 'Error';
+    // Fallback to sensor data if watering data fails
+    $('#latest-pump').textContent = formatPumpStatus(latest.pump_active, null);
   }
 }
 
@@ -215,13 +197,18 @@ setInterval(async () => {
   await loadTable($('#search').value.trim());
 }, 30000);
 
-// Auto-refresh watering status every 5 seconds (more frequent for real-time updates)
+// Auto-refresh pump status (including watering data) every 5 seconds (more frequent for real-time updates)
 setInterval(async () => {
   try {
-    const wateringData = await api.getWatering();
-    $('#latest-watering').textContent = formatWateringStatus(wateringData);
+    // Get latest sensor data to ensure we have the most recent pump status
+    const sensors = await api.listSensors();
+    if (sensors.length > 0) {
+      const latest = sensors[0];
+      const wateringData = await api.getWatering();
+      $('#latest-pump').textContent = formatPumpStatus(latest.pump_active, wateringData);
+    }
   } catch (error) {
-    console.error('Failed to refresh watering data:', error);
+    console.error('Failed to refresh pump/watering status:', error);
   }
 }, 5000);
 
