@@ -44,7 +44,7 @@ def test_sensor_api(base_url):
     # Test 1: Health check
     print("1. Testing health endpoint...")
     try:
-        response = requests.get(f"{base_url}/api/health")
+        response = requests.get(f"{base_url}/api/v1/health")
         if response.status_code == 200:
             print("[OK] Health check passed:", response.json())
         else:
@@ -94,7 +94,7 @@ def test_sensor_api(base_url):
     # Test 3: Get all sensor data
     print("3. Testing GET all sensor data...")
     try:
-        response = requests.get(f"{base_url}/api/sensor-data")
+        response = requests.get(f"{base_url}/api/v1/sensor-data")
         if response.status_code == 200:
             all_data = response.json()
             print(f"[OK] Retrieved {len(all_data)} sensor readings")
@@ -117,7 +117,7 @@ def test_sensor_api(base_url):
     }
     
     try:
-        response = requests.put(f"{base_url}/api/sensor-data/{sensor_id}", json=update_data)
+        response = requests.put(f"{base_url}/api/v1/sensor-data/{sensor_id}", json=update_data)
         if response.status_code == 200:
             updated_data = response.json()
             print("[OK] Sensor data updated successfully!")
@@ -133,7 +133,7 @@ def test_sensor_api(base_url):
     # Test 5: Delete sensor data
     print("5. Testing DELETE sensor data...")
     try:
-        response = requests.delete(f"{base_url}/api/sensor-data/{sensor_id}")
+        response = requests.delete(f"{base_url}/api/v1/sensor-data/{sensor_id}")
         if response.status_code == 204:
             print("[OK] Sensor data deleted successfully!")
         else:

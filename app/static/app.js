@@ -1,13 +1,13 @@
 const $ = (sel) => document.querySelector(sel);
 const api = {
-  async health(){ const r = await fetch('/api/health'); return r.json(); },
-  async listSensors(q){ const r = await fetch('/api/sensor-data' + (q?`?q=${encodeURIComponent(q)}`:'')); return r.json(); },
-  async getSensor(id){ const r = await fetch('/api/sensor-data/'+id); if(!r.ok) throw new Error('Not found'); return r.json(); },
+  async health(){ const r = await fetch('/api/v1/health'); return r.json(); },
+  async listSensors(q){ const r = await fetch('/api/v1/sensor-data' + (q?`?q=${encodeURIComponent(q)}`:'')); return r.json(); },
+  async getSensor(id){ const r = await fetch('/api/v1/sensor-data/'+id); if(!r.ok) throw new Error('Not found'); return r.json(); },
   async createSensor(data){ const r = await fetch('/api/v1/sensor-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Create failed'); return r.json(); },
-  async updateSensor(id,data){ const r = await fetch('/api/sensor-data/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update failed'); return r.json(); },
-  async delSensor(id){ const r = await fetch('/api/sensor-data/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
-  async getWatering(deviceId = 'autogrow_esp32'){ const r = await fetch('/api/watering/' + deviceId); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
-  async updateWatering(data){ const r = await fetch('/api/watering',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update watering failed'); return r.json(); },
+  async updateSensor(id,data){ const r = await fetch('/api/v1/sensor-data/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update failed'); return r.json(); },
+  async delSensor(id){ const r = await fetch('/api/v1/sensor-data/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
+  async getWatering(deviceId = 'autogrow_esp32'){ const r = await fetch('/api/v1/watering/' + deviceId); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
+  async updateWatering(data){ const r = await fetch('/api/v1/watering',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update watering failed'); return r.json(); },
 };
 
 async function refreshHealth(){

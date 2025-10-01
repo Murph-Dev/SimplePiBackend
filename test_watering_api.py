@@ -41,7 +41,7 @@ def test_watering_api(base_url):
     # Test 1: Get watering data (should create default if not exists)
     print("1. Testing GET watering data...")
     try:
-        response = requests.get(f"{base_url}/api/watering/autogrow_esp32")
+        response = requests.get(f"{base_url}/api/v1/watering/autogrow_esp32")
         if response.status_code == 200:
             watering_data = response.json()
             print("[OK] Watering data retrieved successfully!")
@@ -68,7 +68,7 @@ def test_watering_api(base_url):
     }
     
     try:
-        response = requests.put(f"{base_url}/api/watering", json=update_data)
+        response = requests.put(f"{base_url}/api/v1/watering", json=update_data)
         if response.status_code == 200:
             updated_data = response.json()
             print("[OK] Watering data updated successfully!")
@@ -90,7 +90,7 @@ def test_watering_api(base_url):
     }
     
     try:
-        response = requests.put(f"{base_url}/api/watering", json=finish_data)
+        response = requests.put(f"{base_url}/api/v1/watering", json=finish_data)
         if response.status_code == 200:
             finished_data = response.json()
             print("[OK] Pump status updated successfully!")
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     
     # Check if server is running
     try:
-        response = requests.get(f"{base_url}/api/health", timeout=5)
+        response = requests.get(f"{base_url}/api/v1/health", timeout=5)
         if response.status_code != 200:
             print(f"[ERROR] Server health check failed: {response.status_code}")
             sys.exit(1)

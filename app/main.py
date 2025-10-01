@@ -27,7 +27,7 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 # ------------------ API ------------------
-@app.get("/api/health")
+@app.get("/api/v1/health")
 def health():
     return {"status": "ok"}
 
@@ -61,19 +61,19 @@ def create_sensor_data(payload: ArduinoSensorData, request: Request, session: Se
     session.refresh(sensor_data)
     return sensor_data
 
-@app.get("/api/sensor-data", response_model=List[SensorData])
+@app.get("/api/v1/sensor-data", response_model=List[SensorData])
 def list_sensor_data(session: Session = Depends(session_dep), limit: Optional[int] = 100):
     stmt = select(SensorData).order_by(SensorData.created_at.desc()).limit(limit)
     return session.exec(stmt).all()
 
-@app.get("/api/sensor-data/{sensor_id}", response_model=SensorData)
+@app.get("/api/v1/sensor-data/{sensor_id}", response_model=SensorData)
 def get_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
     sensor_data = session.get(SensorData, sensor_id)
     if not sensor_data:
         raise HTTPException(status_code=404, detail="Sensor data not found")
     return sensor_data
 
-@app.put("/api/sensor-data/{sensor_id}", response_model=SensorData)
+@app.put("/api/v1/sensor-data/{sensor_id}", response_model=SensorData)
 def update_sensor_data(sensor_id: int, payload: SensorDataUpdate, session: Session = Depends(session_dep)):
     sensor_data = session.get(SensorData, sensor_id)
     if not sensor_data:
@@ -86,7 +86,7 @@ def update_sensor_data(sensor_id: int, payload: SensorDataUpdate, session: Sessi
     session.refresh(sensor_data)
     return sensor_data
 
-@app.delete("/api/sensor-data/{sensor_id}", status_code=204)
+@app.delete("/api/v1/sensor-data/{sensor_id}", status_code=204)
 def delete_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
     sensor_data = session.get(SensorData, sensor_id)
     if not sensor_data:
@@ -96,7 +96,7 @@ def delete_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
     return
 
 # ------------------ Watering Data API ------------------
-@app.get("/api/watering/{device_id}", response_model=WateringData)
+@app.get("/api/v1/watering/{device_id}", response_model=WateringData)
 def get_watering_data(device_id: str, session: Session = Depends(session_dep)):
     watering_data = session.get(WateringData, device_id)
     if not watering_data:
@@ -107,7 +107,7 @@ def get_watering_data(device_id: str, session: Session = Depends(session_dep)):
         session.refresh(watering_data)
     return watering_data
 
-@app.put("/api/watering", response_model=WateringData)
+@app.put("/api/v1/watering", response_model=WateringData)
 def update_watering_data(payload: WateringDataUpdate, session: Session = Depends(session_dep)):
     # Get device_id from payload, use default if not provided
     device_id = payload.device_id or "default"

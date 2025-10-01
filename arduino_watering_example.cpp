@@ -104,7 +104,7 @@ void updateWateringData(bool pump_active, bool update_last_watering) {
     HTTPClient http;
     
     // Construct URL
-    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/watering";
+    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/v1/watering";
     
     // Create JSON payload
     StaticJsonDocument<200> doc;
@@ -162,7 +162,7 @@ void getWateringStatus() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     
-    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/watering/autogrow_esp32";
+    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/v1/watering/autogrow_esp32";
     
     http.begin(url);
     int httpResponseCode = http.GET();
