@@ -16,13 +16,26 @@ A lightweight FastAPI backend for Raspberry Pi Zero to collect, store, and manag
 The backend expects JSON data from your Arduino in this format:
 ```json
 {
-  "temperature": 23.5,
-  "humidity": 65.2,
-  "lux": 850,
-  "pumpActive": true,
-  "lastReading": 1640995200
+  "temperature": 25.5,
+  "humidity": 60.2,
+  "lux": 150.0,
+  "pumpActive": false,
+  "timestamp": 1234567890,
+  "device_id": "autogrow_esp32",
+  "firmware_version": "1.0.0",
+  "sensor_type": "DHT11_LDR"
 }
 ```
+
+### Field Descriptions
+- `temperature`: Temperature reading in Celsius (float)
+- `humidity`: Humidity percentage (float)
+- `lux`: Light level in lux (float)
+- `pumpActive`: Pump status (boolean)
+- `timestamp`: Unix timestamp from device (integer)
+- `device_id`: Device identifier (string)
+- `firmware_version`: Firmware version (string, optional)
+- `sensor_type`: Type of sensors used (string, optional)
 
 ## API Endpoints
 
@@ -57,15 +70,25 @@ The backend expects JSON data from your Arduino in this format:
 
 4. **Test the API**
    ```bash
-   python test_sensor_api.py
+   python test_sensor_api.py --local
+   ```
+
+5. **Populate with Dummy Data (Optional)**
+   ```bash
+   # Create 50 realistic sensor readings from 3 devices
+   python populate_dummy_data.py --local --count 50 --devices 3
+   
+   # Create 20 readings from 2 devices
+   python populate_dummy_data.py --local --count 20 --devices 2
    ```
 
 ## Arduino Code Integration
 
-Your existing Arduino code should work with minimal changes. The backend automatically:
-- Extracts device ID from `X-Device-ID` header
+Your Arduino code should work with the new payload structure. The backend:
+- Accepts `device_id` directly in the JSON payload (no header needed)
 - Handles the `pumpActive` field mapping to `pump_active`
-- Stores timestamps and device information
+- Stores device timestamps, firmware version, and sensor type
+- Backward compatible: still accepts `X-Device-ID` header if `device_id` not in payload
 
 ## Web Dashboard Features
 
@@ -170,10 +193,43 @@ Now open: `http://<pi-ip>/`
   sudo ufw status
   ```
 
+## Utility Scripts
+
+### Test the API
+```bash
+# Test locally
+python test_sensor_api.py --local
+
+# Test on Pi
+python test_sensor_api.py --url http://192.168.1.100:8000
+```
+
+### Populate with Dummy Data
+```bash
+# Create realistic sensor data for testing
+python populate_dummy_data.py --local --count 100 --devices 3
+
+# Options:
+# --count: Number of records to create (default: 50)
+# --devices: Number of different Arduino devices (default: 3)
+# --local: Use localhost instead of Pi IP
+```
+
+### Clear All Data
+```bash
+# Remove all sensor data from database
+python clear_data.py --local
+
+# Skip confirmation prompt
+python clear_data.py --local --confirm
+```
+
 ## Maintenance
 - Update code: `git pull && sudo systemctl restart pi_sensor_backend`
 - Logs: `sudo journalctl -u pi_sensor_backend -f`
 - DB file: `./db.sqlite` (back it up with the app stopped)
+- Clear data: `python clear_data.py --local`
+- Populate test data: `python populate_dummy_data.py --local`
 
 ## Performance Notes
 

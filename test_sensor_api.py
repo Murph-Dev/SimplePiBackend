@@ -59,16 +59,19 @@ def test_sensor_api(base_url):
     
     # Simulate the exact JSON structure from Arduino
     sensor_data = {
-        "temperature": 23.5,
-        "humidity": 65.2,
-        "lux": 850,
-        "pumpActive": True,  # Note: Arduino sends "pumpActive" but our model expects "pump_active"
-        "lastReading": int(time.time())
+        "temperature": 25.5,
+        "humidity": 60.2,
+        "lux": 150.0,
+        "pumpActive": False,
+        "timestamp": int(time.time()),
+        "device_id": "autogrow_esp32",
+        "firmware_version": "1.0.0",
+        "sensor_type": "DHT11_LDR"
     }
     
     headers = {
-        "Content-Type": "application/json",
-        "X-Device-ID": "arduino_001"
+        "Content-Type": "application/json"
+        # Note: device_id is now in the payload, not header
     }
     
     try:
@@ -109,7 +112,8 @@ def test_sensor_api(base_url):
     print("4. Testing UPDATE sensor data...")
     update_data = {
         "temperature": 24.1,
-        "pump_active": False
+        "pump_active": False,
+        "firmware_version": "1.0.1"
     }
     
     try:

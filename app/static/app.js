@@ -48,6 +48,8 @@ function updateLatestReadings(sensors){
 function rowHtml(sensor){
   const created = formatDateTime(sensor.created_at);
   const deviceId = sensor.device_id || 'Unknown';
+  const firmware = sensor.firmware_version || 'N/A';
+  const sensorType = sensor.sensor_type || 'N/A';
   return `<tr>
     <td>${sensor.id}</td>
     <td>${formatTemperature(sensor.temperature)}</td>
@@ -55,6 +57,8 @@ function rowHtml(sensor){
     <td>${formatLux(sensor.lux)}</td>
     <td>${formatPumpStatus(sensor.pump_active)}</td>
     <td>${deviceId}</td>
+    <td><span class="muted">${firmware}</span></td>
+    <td><span class="muted">${sensorType}</span></td>
     <td><span class="muted">${created}</span></td>
     <td class="actions-col">
       <button data-edit="${sensor.id}">Edit</button>
@@ -70,7 +74,7 @@ async function loadTable(q){
     updateLatestReadings(sensors);
   } catch (error) {
     console.error('Failed to load sensor data:', error);
-    $('#sensor-table tbody').innerHTML = '<tr><td colspan="8" class="error">Failed to load data</td></tr>';
+    $('#sensor-table tbody').innerHTML = '<tr><td colspan="10" class="error">Failed to load data</td></tr>';
   }
 }
 
@@ -80,14 +84,16 @@ function formData(){
   const luxRaw = $('#sensor-lux').value;
   const pump = $('#sensor-pump').checked;
   const device = $('#sensor-device').value.trim() || null;
-  const readingRaw = $('#sensor-reading').value;
+  const timestampRaw = $('#sensor-timestamp').value;
+  const firmware = $('#sensor-firmware').value.trim() || null;
+  const sensorType = $('#sensor-type').value.trim() || null;
   
   const temperature = tempRaw === '' ? null : Number(tempRaw);
   const humidity = humidityRaw === '' ? null : Number(humidityRaw);
   const lux = luxRaw === '' ? null : Number(luxRaw);
-  const last_reading = readingRaw === '' ? null : Number(readingRaw);
+  const timestamp = timestampRaw === '' ? null : Number(timestampRaw);
   
-  return { temperature, humidity, lux, pump_active: pump, device_id: device, last_reading };
+  return { temperature, humidity, lux, pump_active: pump, device_id: device, timestamp, firmware_version: firmware, sensor_type: sensorType };
 }
 
 function resetForm(){
@@ -97,7 +103,9 @@ function resetForm(){
   $('#sensor-lux').value = '';
   $('#sensor-pump').checked = false;
   $('#sensor-device').value = '';
-  $('#sensor-reading').value = '';
+  $('#sensor-timestamp').value = '';
+  $('#sensor-firmware').value = '';
+  $('#sensor-type').value = '';
 }
 
 function populateForm(sensor){
@@ -107,7 +115,9 @@ function populateForm(sensor){
   $('#sensor-lux').value = sensor.lux;
   $('#sensor-pump').checked = sensor.pump_active;
   $('#sensor-device').value = sensor.device_id || '';
-  $('#sensor-reading').value = sensor.last_reading;
+  $('#sensor-timestamp').value = sensor.timestamp || '';
+  $('#sensor-firmware').value = sensor.firmware_version || '';
+  $('#sensor-type').value = sensor.sensor_type || '';
 }
 
 document.addEventListener('click', async (e) => {

@@ -40,8 +40,8 @@ def session_dep():
 # ------------------ Sensor Data API ------------------
 @app.post("/api/v1/sensor-data", response_model=SensorData, status_code=201)
 def create_sensor_data(payload: ArduinoSensorData, request: Request, session: Session = Depends(session_dep)):
-    # Extract device_id from headers if present
-    device_id = request.headers.get("X-Device-ID")
+    # Use device_id from payload, fallback to header for backward compatibility
+    device_id = payload.device_id or request.headers.get("X-Device-ID")
     
     # Convert Arduino field names to our database field names
     sensor_data = SensorData(
@@ -49,8 +49,10 @@ def create_sensor_data(payload: ArduinoSensorData, request: Request, session: Se
         humidity=payload.humidity,
         lux=payload.lux,
         pump_active=payload.pumpActive,
-        last_reading=payload.lastReading,
-        device_id=device_id
+        timestamp=payload.timestamp,
+        device_id=device_id,
+        firmware_version=payload.firmware_version,
+        sensor_type=payload.sensor_type
     )
     
     session.add(sensor_data)

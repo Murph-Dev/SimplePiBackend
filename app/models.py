@@ -7,17 +7,22 @@ class ArduinoSensorData(BaseModel):
     """Model to receive Arduino data with original field names"""
     temperature: float
     humidity: float
-    lux: int
+    lux: float  # Changed from int to float to handle decimal values
     pumpActive: bool
-    lastReading: int
+    timestamp: int  # Changed from lastReading to timestamp
+    device_id: str  # Now included in payload instead of header
+    firmware_version: Optional[str] = None
+    sensor_type: Optional[str] = None
 
 class SensorDataBase(SQLModel):
     temperature: float = Field(description="Temperature reading")
     humidity: float = Field(description="Humidity reading")
-    lux: int = Field(description="Light level in lux")
+    lux: float = Field(description="Light level in lux")  # Changed to float
     pump_active: bool = Field(description="Pump status")
-    last_reading: int = Field(description="Last reading timestamp")
+    timestamp: int = Field(description="Device timestamp")  # Changed from last_reading
     device_id: Optional[str] = Field(default=None, max_length=50, description="Device identifier")
+    firmware_version: Optional[str] = Field(default=None, max_length=20, description="Firmware version")
+    sensor_type: Optional[str] = Field(default=None, max_length=50, description="Sensor type")
 
 class SensorData(SensorDataBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -29,7 +34,9 @@ class SensorDataCreate(SensorDataBase):
 class SensorDataUpdate(SQLModel):
     temperature: Optional[float] = None
     humidity: Optional[float] = None
-    lux: Optional[int] = None
+    lux: Optional[float] = None  # Changed to float
     pump_active: Optional[bool] = None
-    last_reading: Optional[int] = None
+    timestamp: Optional[int] = None  # Changed from last_reading
     device_id: Optional[str] = None
+    firmware_version: Optional[str] = None
+    sensor_type: Optional[str] = None
