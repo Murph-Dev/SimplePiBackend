@@ -40,3 +40,18 @@ class SensorDataUpdate(SQLModel):
     device_id: Optional[str] = None
     firmware_version: Optional[str] = None
     sensor_type: Optional[str] = None
+
+# Watering Data Model
+class WateringData(SQLModel, table=True):
+    id: Optional[int] = Field(default=1, primary_key=True)  # Single record
+    pump_active: bool = Field(default=False, description="Current pump status")
+    last_watering: Optional[datetime] = Field(default=None, description="Last watering time")
+    watering_duration: int = Field(default=30, description="Watering duration in seconds")
+    auto_watering: bool = Field(default=True, description="Auto watering enabled")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update time")
+
+class WateringDataUpdate(SQLModel):
+    pump_active: Optional[bool] = None
+    last_watering: Optional[datetime] = None
+    watering_duration: Optional[int] = None
+    auto_watering: Optional[bool] = None

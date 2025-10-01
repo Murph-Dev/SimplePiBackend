@@ -6,6 +6,8 @@ const api = {
   async createSensor(data){ const r = await fetch('/api/v1/sensor-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Create failed'); return r.json(); },
   async updateSensor(id,data){ const r = await fetch('/api/sensor-data/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update failed'); return r.json(); },
   async delSensor(id){ const r = await fetch('/api/sensor-data/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
+  async getWatering(){ const r = await fetch('/api/watering'); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
+  async updateWatering(data){ const r = await fetch('/api/watering',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update watering failed'); return r.json(); },
 };
 
 async function refreshHealth(){
@@ -35,7 +37,28 @@ function formatPumpStatus(pump){
   return pump ? '🟢 Active' : '🔴 Inactive';
 }
 
-function updateLatestReadings(sensors){
+function formatWateringStatus(wateringData){
+  if (!wateringData) return '--';
+  
+  const now = new Date();
+  const lastWatering = wateringData.last_watering ? new Date(wateringData.last_watering) : null;
+  
+  let status = wateringData.pump_active ? '💧 Watering' : '⏸️ Idle';
+  
+  if (lastWatering) {
+    const diffMinutes = Math.floor((now - lastWatering) / (1000 * 60));
+    if (diffMinutes < 60) {
+      status += ` (${diffMinutes}m ago)`;
+    } else {
+      const diffHours = Math.floor(diffMinutes / 60);
+      status += ` (${diffHours}h ago)`;
+    }
+  }
+  
+  return status;
+}
+
+async function updateLatestReadings(sensors){
   if(sensors.length === 0) return;
   
   const latest = sensors[0];
@@ -43,6 +66,15 @@ function updateLatestReadings(sensors){
   $('#latest-humidity').textContent = formatHumidity(latest.humidity);
   $('#latest-lux').textContent = formatLux(latest.lux);
   $('#latest-pump').textContent = formatPumpStatus(latest.pump_active);
+  
+  // Update watering status
+  try {
+    const wateringData = await api.getWatering();
+    $('#latest-watering').textContent = formatWateringStatus(wateringData);
+  } catch (error) {
+    console.error('Failed to load watering data:', error);
+    $('#latest-watering').textContent = 'Error';
+  }
 }
 
 function rowHtml(sensor){
@@ -71,7 +103,7 @@ async function loadTable(q){
   try {
     const sensors = await api.listSensors(q);
     $('#sensor-table tbody').innerHTML = sensors.map(rowHtml).join('');
-    updateLatestReadings(sensors);
+    await updateLatestReadings(sensors);
   } catch (error) {
     console.error('Failed to load sensor data:', error);
     $('#sensor-table tbody').innerHTML = '<tr><td colspan="10" class="error">Failed to load data</td></tr>';
@@ -178,10 +210,20 @@ $('#refresh-btn').addEventListener('click', async () => {
   await loadTable($('#search').value.trim());
 });
 
-// Auto-refresh every 30 seconds
+// Auto-refresh sensor data every 30 seconds
 setInterval(async () => {
   await loadTable($('#search').value.trim());
 }, 30000);
+
+// Auto-refresh watering status every 5 seconds (more frequent for real-time updates)
+setInterval(async () => {
+  try {
+    const wateringData = await api.getWatering();
+    $('#latest-watering').textContent = formatWateringStatus(wateringData);
+  } catch (error) {
+    console.error('Failed to refresh watering data:', error);
+  }
+}, 5000);
 
 (async function init(){
   await refreshHealth();

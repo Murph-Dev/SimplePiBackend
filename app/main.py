@@ -4,8 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import List, Optional
 from sqlmodel import select
-from .models import SensorData, SensorDataCreate, SensorDataUpdate, ArduinoSensorData
+from .models import SensorData, SensorDataCreate, SensorDataUpdate, ArduinoSensorData, WateringData, WateringDataUpdate
 from .db import init_db, get_session
+from datetime import datetime
 import os
 
 app = FastAPI(title="Pi Sensor Data Backend", version="1.0.0")
@@ -93,3 +94,38 @@ def delete_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
     session.delete(sensor_data)
     session.commit()
     return
+
+# ------------------ Watering Data API ------------------
+@app.get("/api/watering", response_model=WateringData)
+def get_watering_data(session: Session = Depends(session_dep)):
+    watering_data = session.get(WateringData, 1)
+    if not watering_data:
+        # Create default watering data if it doesn't exist
+        watering_data = WateringData()
+        session.add(watering_data)
+        session.commit()
+        session.refresh(watering_data)
+    return watering_data
+
+@app.put("/api/watering", response_model=WateringData)
+def update_watering_data(payload: WateringDataUpdate, session: Session = Depends(session_dep)):
+    watering_data = session.get(WateringData, 1)
+    if not watering_data:
+        # Create new watering data if it doesn't exist
+        watering_data = WateringData()
+        session.add(watering_data)
+        session.commit()
+        session.refresh(watering_data)
+    
+    # Update fields
+    data = payload.dict(exclude_unset=True)
+    for k, v in data.items():
+        setattr(watering_data, k, v)
+    
+    # Update the updated_at timestamp
+    watering_data.updated_at = datetime.utcnow()
+    
+    session.add(watering_data)
+    session.commit()
+    session.refresh(watering_data)
+    return watering_data

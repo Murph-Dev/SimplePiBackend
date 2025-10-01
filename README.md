@@ -51,6 +51,10 @@ The backend expects JSON data from your Arduino in this format:
 - `DELETE /api/sensor-data/{id}` - Delete reading
 - `GET /api/health` - Health check
 
+### Watering Control API
+- `GET /api/watering` - Get current watering status and settings
+- `PUT /api/watering` - Update watering status and settings
+
 ## Quick Start
 
 1. **Install Dependencies**
@@ -93,10 +97,33 @@ Your Arduino code should work with the new payload structure. The backend:
 ## Web Dashboard Features
 
 - **Latest Readings**: Real-time display of current sensor values
+- **Watering Status**: Live watering system status with pump state and last watering time
 - **Data History**: Table view of all stored readings with filtering
 - **Edit Capability**: Modify existing sensor readings
 - **Delete Records**: Remove old or incorrect data
+- **Auto-refresh**: Dashboard updates every 30 seconds, watering status every 5 seconds
 - **Responsive Design**: Works on desktop, tablet, and mobile
+
+## Watering System Integration
+
+The backend includes a watering control system that tracks:
+- **Pump Status**: Current state (active/inactive)
+- **Last Watering**: Timestamp of the last watering session
+- **Watering Duration**: How long the pump runs (in seconds)
+- **Auto Watering**: Whether automatic watering is enabled
+
+### Arduino Integration
+Your Arduino can control the watering system by sending PUT requests to `/api/watering`:
+
+```json
+{
+  "pump_active": true,
+  "watering_duration": 30,
+  "auto_watering": true
+}
+```
+
+See `arduino_watering_example.cpp` for a complete implementation example.
 
 ## Database
 
@@ -199,6 +226,9 @@ Now open: `http://<pi-ip>/`
 ```bash
 # Test locally
 python test_sensor_api.py --local
+
+# Test watering API
+python test_watering_api.py --local
 
 # Test on Pi
 python test_sensor_api.py --url http://192.168.1.100:8000
