@@ -1,0 +1,86 @@
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from typing import List, Optional
+from sqlmodel import select
+from .models import SensorData, SensorDataCreate, SensorDataUpdate
+from .db import init_db, get_session
+import os
+
+app = FastAPI(title="Pi Sensor Data Backend", version="1.0.0")
+
+# Create DB tables at startup
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+# Static + templates for the tiny frontend
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# ------------------ HTML Page ------------------
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# ------------------ API ------------------
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+from sqlmodel import Session
+
+def session_dep():
+    with get_session() as s:
+        yield s
+
+
+# ------------------ Sensor Data API ------------------
+@app.post("/api/v1/sensor-data", response_model=SensorData, status_code=201)
+def create_sensor_data(payload: SensorDataCreate, request: Request, session: Session = Depends(session_dep)):
+    # Extract device_id from headers if present
+    device_id = request.headers.get("X-Device-ID")
+    if device_id:
+        payload.device_id = device_id
+    
+    sensor_data = SensorData(**payload.dict())
+    session.add(sensor_data)
+    session.commit()
+    session.refresh(sensor_data)
+    return sensor_data
+
+@app.get("/api/sensor-data", response_model=List[SensorData])
+def list_sensor_data(session: Session = Depends(session_dep), limit: Optional[int] = 100):
+    stmt = select(SensorData).order_by(SensorData.created_at.desc()).limit(limit)
+    return session.exec(stmt).all()
+
+@app.get("/api/sensor-data/{sensor_id}", response_model=SensorData)
+def get_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
+    sensor_data = session.get(SensorData, sensor_id)
+    if not sensor_data:
+        raise HTTPException(status_code=404, detail="Sensor data not found")
+    return sensor_data
+
+@app.put("/api/sensor-data/{sensor_id}", response_model=SensorData)
+def update_sensor_data(sensor_id: int, payload: SensorDataUpdate, session: Session = Depends(session_dep)):
+    sensor_data = session.get(SensorData, sensor_id)
+    if not sensor_data:
+        raise HTTPException(status_code=404, detail="Sensor data not found")
+    data = payload.dict(exclude_unset=True)
+    for k, v in data.items():
+        setattr(sensor_data, k, v)
+    session.add(sensor_data)
+    session.commit()
+    session.refresh(sensor_data)
+    return sensor_data
+
+@app.delete("/api/sensor-data/{sensor_id}", status_code=204)
+def delete_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
+    sensor_data = session.get(SensorData, sensor_id)
+    if not sensor_data:
+        raise HTTPException(status_code=404, detail="Sensor data not found")
+    session.delete(sensor_data)
+    session.commit()
+    return

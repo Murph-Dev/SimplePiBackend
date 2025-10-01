@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pi Sensor Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header>
+    <h1>🌡️ Pi Sensor Dashboard</h1>
+    <div id="health">Checking API...</div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>📊 Latest Sensor Readings</h2>
+      <div id="latest-readings" class="latest-readings">
+        <div class="reading-card">
+          <div class="reading-label">Temperature</div>
+          <div class="reading-value" id="latest-temp">--°C</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-label">Humidity</div>
+          <div class="reading-value" id="latest-humidity">--%</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-label">Light Level</div>
+          <div class="reading-value" id="latest-lux">-- lux</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-label">Pump Status</div>
+          <div class="reading-value" id="latest-pump">--</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>✏️ Edit Sensor Data</h2>
+      <form id="sensor-form">
+        <input type="hidden" id="sensor-id">
+        <div class="form-row">
+          <label>Temperature (°C) <input id="sensor-temp" type="number" step="0.1"></label>
+          <label>Humidity (%) <input id="sensor-humidity" type="number" step="0.1"></label>
+        </div>
+        <div class="form-row">
+          <label>Light Level (lux) <input id="sensor-lux" type="number"></label>
+          <label>Pump Active <input id="sensor-pump" type="checkbox"></label>
+        </div>
+        <div class="form-row">
+          <label>Device ID <input id="sensor-device" maxlength="50"></label>
+          <label>Last Reading <input id="sensor-reading" type="number"></label>
+        </div>
+        <div class="actions">
+          <button type="submit">Save Changes</button>
+          <button type="button" id="reset-btn">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <h2>📈 Sensor Data History</h2>
+        <div class="controls">
+          <input id="search" placeholder="Search by device ID...">
+          <button id="refresh-btn">🔄 Refresh</button>
+        </div>
+      </div>
+      <table id="sensor-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Temperature</th>
+            <th>Humidity</th>
+            <th>Light</th>
+            <th>Pump</th>
+            <th>Device</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
