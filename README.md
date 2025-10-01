@@ -130,8 +130,9 @@ The dashboard provides a comprehensive view of all devices in your system:
 - **Device Cards**: Each device gets its own card showing the latest sensor readings
 - **Quick Status**: See temperature, humidity, light, and pump status at a glance
 - **Device Information**: Display device ID, firmware version, and sensor type
+- **Real-time Pump Status**: Device cards show live watering system status with green/red indicators
 - **Last Updated**: Shows when each device last sent data
-- **Auto-refresh**: Device overview updates with the main dashboard
+- **Auto-refresh**: Device overview updates every 5 seconds for pump status, every 30 seconds for full refresh
 
 ### Watering History Tracking
 The system automatically tracks all watering events:

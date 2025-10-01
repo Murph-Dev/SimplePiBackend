@@ -156,11 +156,16 @@ function getUniqueDevices(sensors){
   return Array.from(deviceMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-function deviceCardHtml(device){
+function deviceCardHtml(device, wateringData = null){
   const deviceId = device.device_id || 'Unknown';
   const firmware = device.firmware_version || 'N/A';
   const sensorType = device.sensor_type || 'N/A';
   const lastUpdate = formatDateTime(device.created_at);
+  
+  // Use watering data for pump status if available and device matches
+  const pumpStatus = (wateringData && wateringData.device_id === deviceId) 
+    ? formatPumpStatus(device.pump_active, wateringData)
+    : formatPumpStatus(device.pump_active, null);
   
   return `
     <div class="device-card">
@@ -183,7 +188,7 @@ function deviceCardHtml(device){
         </div>
         <div class="device-reading">
           <span class="device-reading-label">🔧</span>
-          <span class="device-reading-value">${formatPumpStatus(device.pump_active)}</span>
+          <span class="device-reading-value">${pumpStatus}</span>
         </div>
       </div>
       <div class="device-footer">
@@ -203,7 +208,15 @@ async function loadDeviceOverview(){
       return;
     }
     
-    $('#device-overview').innerHTML = uniqueDevices.map(deviceCardHtml).join('');
+    // Fetch watering data for all devices
+    let wateringData = null;
+    try {
+      wateringData = await api.getWatering();
+    } catch (error) {
+      console.error('Failed to load watering data for device overview:', error);
+    }
+    
+    $('#device-overview').innerHTML = uniqueDevices.map(device => deviceCardHtml(device, wateringData)).join('');
   } catch (error) {
     console.error('Failed to load device overview:', error);
     $('#device-overview').innerHTML = '<div class="error">Failed to load device data</div>';
@@ -268,6 +281,9 @@ setInterval(async () => {
       const latest = sensors[0];
       const wateringData = await api.getWatering();
       $('#latest-pump').textContent = formatPumpStatus(latest.pump_active, wateringData);
+      
+      // Also refresh device overview pump status
+      await loadDeviceOverview();
     }
   } catch (error) {
     console.error('Failed to refresh pump/watering status:', error);
