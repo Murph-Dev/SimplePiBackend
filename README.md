@@ -55,6 +55,13 @@ The backend expects JSON data from your Arduino in this format:
 - `GET /api/v1/watering/{device_id}` - Get current watering status and settings for a device
 - `PUT /api/v1/watering` - Update watering status and settings
 
+### Watering History API
+- `GET /api/v1/watering-history` - List all watering history records
+- `GET /api/v1/watering-history/{id}` - Get specific watering history record
+- `POST /api/v1/watering-history` - Create new watering history record
+- `PUT /api/v1/watering-history/{id}` - Update watering history record
+- `DELETE /api/v1/watering-history/{id}` - Delete watering history record
+
 ## Quick Start
 
 1. **Install Dependencies**
@@ -96,9 +103,10 @@ Your Arduino code should work with the new payload structure. The backend:
 
 ## Web Dashboard Features
 
-- **Latest Readings**: Real-time display of current sensor values including integrated pump/watering status
-- **Data History**: Table view of all stored readings with filtering
-- **Edit Capability**: Modify existing sensor readings
+- **Latest Readings**: Real-time display of current sensor values including integrated pump/watering status with device identification
+- **Device Overview**: Quick snapshot cards showing the latest readings from each device in the system
+- **Sensor Data History**: Table view of all stored sensor readings with filtering
+- **Watering History**: Table view of all watering events with start/end times and durations
 - **Delete Records**: Remove old or incorrect data
 - **Auto-refresh**: Dashboard updates every 30 seconds, pump status every 5 seconds
 - **Responsive Design**: Works on desktop, tablet, and mobile
@@ -116,6 +124,21 @@ The backend includes a watering control system that tracks:
 The pump status in the "Latest Sensor Readings" section now shows the real-time watering system status:
 - 🟢 **Active**: Pump is currently running
 - 🔴 **Inactive**: Pump is stopped
+
+### Device Overview
+The dashboard provides a comprehensive view of all devices in your system:
+- **Device Cards**: Each device gets its own card showing the latest sensor readings
+- **Quick Status**: See temperature, humidity, light, and pump status at a glance
+- **Device Information**: Display device ID, firmware version, and sensor type
+- **Last Updated**: Shows when each device last sent data
+- **Auto-refresh**: Device overview updates with the main dashboard
+
+### Watering History Tracking
+The system automatically tracks all watering events:
+- **Automatic Recording**: When watering starts, a history record is created
+- **Completion Tracking**: When watering ends, the history record is updated with end time
+- **Event Details**: Each record includes duration, type (auto/manual), device, and timestamps
+- **Web Interface**: View complete watering history in the dashboard with filtering options
 
 ### Arduino Integration
 Your Arduino can control the watering system by sending PUT requests to `/api/v1/watering`:
@@ -237,6 +260,9 @@ python test_sensor_api.py --local
 
 # Test watering API
 python test_watering_api.py --local
+
+# Test watering history API
+python test_watering_history.py --local
 
 # Test on Pi
 python test_sensor_api.py --url http://192.168.1.100:8000

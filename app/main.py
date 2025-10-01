@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import List, Optional
 from sqlmodel import select
-from .models import SensorData, SensorDataCreate, SensorDataUpdate, ArduinoSensorData, WateringData, WateringDataUpdate
+from .models import SensorData, SensorDataCreate, SensorDataUpdate, ArduinoSensorData, WateringData, WateringDataUpdate, WateringHistory, WateringHistoryCreate, WateringHistoryUpdate
 from .db import init_db, get_session
 from datetime import datetime
 import os
@@ -120,6 +120,10 @@ def update_watering_data(payload: WateringDataUpdate, session: Session = Depends
         session.commit()
         session.refresh(watering_data)
     
+    # Check if pump status is changing
+    old_pump_active = watering_data.pump_active
+    new_pump_active = payload.pump_active
+    
     # Update fields
     data = payload.dict(exclude_unset=True)
     for k, v in data.items():
@@ -129,7 +133,83 @@ def update_watering_data(payload: WateringDataUpdate, session: Session = Depends
     # Update the timestamp
     watering_data.timestamp = datetime.utcnow().timestamp()
     
+    # Create history records when watering starts or ends
+    if old_pump_active != new_pump_active and new_pump_active is not None:
+        current_time = datetime.utcnow()
+        
+        if new_pump_active and not old_pump_active:
+            # Watering started - create new history record
+            history = WateringHistory(
+                device_id=device_id,
+                watering_duration=watering_data.watering_duration,
+                auto_watering=watering_data.auto_watering,
+                watering_started=current_time,
+                watering_ended=None
+            )
+            session.add(history)
+        elif not new_pump_active and old_pump_active:
+            # Watering ended - update the most recent incomplete history record
+            latest_history = session.exec(
+                select(WateringHistory)
+                .where(WateringHistory.device_id == device_id)
+                .where(WateringHistory.watering_ended.is_(None))
+                .order_by(WateringHistory.watering_started.desc())
+            ).first()
+            
+            if latest_history:
+                latest_history.watering_ended = current_time
+                session.add(latest_history)
+    
     session.add(watering_data)
     session.commit()
     session.refresh(watering_data)
     return watering_data
+
+# ------------------ Watering History API ------------------
+@app.get("/api/v1/watering-history", response_model=List[WateringHistory])
+def list_watering_history(device_id: Optional[str] = None, session: Session = Depends(session_dep)):
+    statement = select(WateringHistory)
+    if device_id:
+        statement = statement.where(WateringHistory.device_id == device_id)
+    statement = statement.order_by(WateringHistory.watering_started.desc())
+    history = session.exec(statement).all()
+    return history
+
+@app.get("/api/v1/watering-history/{history_id}", response_model=WateringHistory)
+def get_watering_history(history_id: int, session: Session = Depends(session_dep)):
+    history = session.get(WateringHistory, history_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="Watering history not found")
+    return history
+
+@app.post("/api/v1/watering-history", response_model=WateringHistory, status_code=201)
+def create_watering_history(history_data: WateringHistoryCreate, session: Session = Depends(session_dep)):
+    history = WateringHistory(**history_data.dict())
+    session.add(history)
+    session.commit()
+    session.refresh(history)
+    return history
+
+@app.put("/api/v1/watering-history/{history_id}", response_model=WateringHistory)
+def update_watering_history(history_id: int, payload: WateringHistoryUpdate, session: Session = Depends(session_dep)):
+    history = session.get(WateringHistory, history_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="Watering history not found")
+    
+    data = payload.dict(exclude_unset=True)
+    for k, v in data.items():
+        setattr(history, k, v)
+    
+    session.add(history)
+    session.commit()
+    session.refresh(history)
+    return history
+
+@app.delete("/api/v1/watering-history/{history_id}", status_code=204)
+def delete_watering_history(history_id: int, session: Session = Depends(session_dep)):
+    history = session.get(WateringHistory, history_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="Watering history not found")
+    session.delete(history)
+    session.commit()
+    return

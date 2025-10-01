@@ -57,3 +57,21 @@ class WateringDataUpdate(SQLModel):
     auto_watering: Optional[bool] = None
     device_id: Optional[str] = None
     timestamp: Optional[float] = None
+
+# Watering History Model
+class WateringHistoryBase(SQLModel):
+    device_id: str = Field(max_length=50, description="Device identifier")
+    watering_duration: int = Field(description="Duration of watering in seconds")
+    auto_watering: bool = Field(description="Whether watering was automatic")
+    watering_started: datetime = Field(description="When watering started")
+    watering_ended: Optional[datetime] = Field(default=None, description="When watering ended")
+
+class WateringHistory(WateringHistoryBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+class WateringHistoryCreate(WateringHistoryBase):
+    pass
+
+class WateringHistoryUpdate(SQLModel):
+    watering_ended: Optional[datetime] = None

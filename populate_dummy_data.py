@@ -224,7 +224,7 @@ if __name__ == "__main__":
     
     # Check if server is running
     try:
-        response = requests.get(f"{base_url}/api/health", timeout=5)
+        response = requests.get(f"{base_url}/api/v1/health", timeout=5)
         if response.status_code != 200:
             print(f"[ERROR] Server health check failed: {response.status_code}")
             sys.exit(1)

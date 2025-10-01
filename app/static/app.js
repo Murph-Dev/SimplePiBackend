@@ -8,6 +8,11 @@ const api = {
   async delSensor(id){ const r = await fetch('/api/v1/sensor-data/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
   async getWatering(deviceId = 'autogrow_esp32'){ const r = await fetch('/api/v1/watering/' + deviceId); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
   async updateWatering(data){ const r = await fetch('/api/v1/watering',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update watering failed'); return r.json(); },
+  async listWateringHistory(deviceId){ const r = await fetch('/api/v1/watering-history' + (deviceId?`?device_id=${encodeURIComponent(deviceId)}`:'')); return r.json(); },
+  async getWateringHistory(id){ const r = await fetch('/api/v1/watering-history/'+id); if(!r.ok) throw new Error('Not found'); return r.json(); },
+  async createWateringHistory(data){ const r = await fetch('/api/v1/watering-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Create failed'); return r.json(); },
+  async updateWateringHistory(id,data){ const r = await fetch('/api/v1/watering-history/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update failed'); return r.json(); },
+  async delWateringHistory(id){ const r = await fetch('/api/v1/watering-history/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
 };
 
 async function refreshHealth(){
@@ -39,6 +44,24 @@ function formatPumpStatus(pump, wateringData){
   return isActive ? '🟢 Active' : '🔴 Inactive';
 }
 
+function formatWateringDuration(seconds){
+  if (seconds < 60) {
+    return `${seconds}s`;
+  } else {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+  }
+}
+
+function formatWateringType(autoWatering){
+  return autoWatering ? '🤖 Auto' : '👤 Manual';
+}
+
+function formatWateringStatus(wateringEnded){
+  return wateringEnded ? '✅ Complete' : '🔄 In Progress';
+}
+
 
 async function updateLatestReadings(sensors){
   if(sensors.length === 0) return;
@@ -47,6 +70,7 @@ async function updateLatestReadings(sensors){
   $('#latest-temp').textContent = formatTemperature(latest.temperature);
   $('#latest-humidity').textContent = formatHumidity(latest.humidity);
   $('#latest-lux').textContent = formatLux(latest.lux);
+  $('#latest-device').textContent = latest.device_id || 'Unknown';
   
   // Fetch watering data and update pump status
   try {
@@ -75,8 +99,25 @@ function rowHtml(sensor){
     <td><span class="muted">${sensorType}</span></td>
     <td><span class="muted">${created}</span></td>
     <td class="actions-col">
-      <button data-edit="${sensor.id}">Edit</button>
       <button class="danger" data-del="${sensor.id}">Delete</button>
+    </td>
+  </tr>`;
+}
+
+function wateringRowHtml(watering){
+  const started = formatDateTime(watering.watering_started);
+  const ended = watering.watering_ended ? formatDateTime(watering.watering_ended) : '--';
+  const deviceId = watering.device_id || 'Unknown';
+  return `<tr>
+    <td>${watering.id}</td>
+    <td>${deviceId}</td>
+    <td>${formatWateringDuration(watering.watering_duration)}</td>
+    <td>${formatWateringType(watering.auto_watering)}</td>
+    <td><span class="muted">${started}</span></td>
+    <td><span class="muted">${ended}</span></td>
+    <td>${formatWateringStatus(watering.watering_ended)}</td>
+    <td class="actions-col">
+      <button class="danger" data-del-watering="${watering.id}">Delete</button>
     </td>
   </tr>`;
 }
@@ -92,97 +133,109 @@ async function loadTable(q){
   }
 }
 
-function formData(){
-  const tempRaw = $('#sensor-temp').value;
-  const humidityRaw = $('#sensor-humidity').value;
-  const luxRaw = $('#sensor-lux').value;
-  const pump = $('#sensor-pump').checked;
-  const device = $('#sensor-device').value.trim() || null;
-  const timestampRaw = $('#sensor-timestamp').value;
-  const firmware = $('#sensor-firmware').value.trim() || null;
-  const sensorType = $('#sensor-type').value.trim() || null;
-  
-  const temperature = tempRaw === '' ? null : Number(tempRaw);
-  const humidity = humidityRaw === '' ? null : Number(humidityRaw);
-  const lux = luxRaw === '' ? null : Number(luxRaw);
-  const timestamp = timestampRaw === '' ? null : Number(timestampRaw);
-  
-  return { temperature, humidity, lux, pump_active: pump, device_id: device, timestamp, firmware_version: firmware, sensor_type: sensorType };
+async function loadWateringTable(deviceId){
+  try {
+    const wateringHistory = await api.listWateringHistory(deviceId);
+    $('#watering-table tbody').innerHTML = wateringHistory.map(wateringRowHtml).join('');
+  } catch (error) {
+    console.error('Failed to load watering history:', error);
+    $('#watering-table tbody').innerHTML = '<tr><td colspan="8" class="error">Failed to load data</td></tr>';
+  }
 }
 
-function resetForm(){
-  $('#sensor-id').value = '';
-  $('#sensor-temp').value = '';
-  $('#sensor-humidity').value = '';
-  $('#sensor-lux').value = '';
-  $('#sensor-pump').checked = false;
-  $('#sensor-device').value = '';
-  $('#sensor-timestamp').value = '';
-  $('#sensor-firmware').value = '';
-  $('#sensor-type').value = '';
+function getUniqueDevices(sensors){
+  const deviceMap = new Map();
+  
+  sensors.forEach(sensor => {
+    const deviceId = sensor.device_id || 'Unknown';
+    if (!deviceMap.has(deviceId) || new Date(sensor.created_at) > new Date(deviceMap.get(deviceId).created_at)) {
+      deviceMap.set(deviceId, sensor);
+    }
+  });
+  
+  return Array.from(deviceMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-function populateForm(sensor){
-  $('#sensor-id').value = sensor.id;
-  $('#sensor-temp').value = sensor.temperature;
-  $('#sensor-humidity').value = sensor.humidity;
-  $('#sensor-lux').value = sensor.lux;
-  $('#sensor-pump').checked = sensor.pump_active;
-  $('#sensor-device').value = sensor.device_id || '';
-  $('#sensor-timestamp').value = sensor.timestamp || '';
-  $('#sensor-firmware').value = sensor.firmware_version || '';
-  $('#sensor-type').value = sensor.sensor_type || '';
+function deviceCardHtml(device){
+  const deviceId = device.device_id || 'Unknown';
+  const firmware = device.firmware_version || 'N/A';
+  const sensorType = device.sensor_type || 'N/A';
+  const lastUpdate = formatDateTime(device.created_at);
+  
+  return `
+    <div class="device-card">
+      <div class="device-header">
+        <h3 class="device-name">${deviceId}</h3>
+        <span class="device-meta">${firmware} • ${sensorType}</span>
+      </div>
+      <div class="device-readings">
+        <div class="device-reading">
+          <span class="device-reading-label">🌡️</span>
+          <span class="device-reading-value">${formatTemperature(device.temperature)}</span>
+        </div>
+        <div class="device-reading">
+          <span class="device-reading-label">💧</span>
+          <span class="device-reading-value">${formatHumidity(device.humidity)}</span>
+        </div>
+        <div class="device-reading">
+          <span class="device-reading-label">☀️</span>
+          <span class="device-reading-value">${formatLux(device.lux)}</span>
+        </div>
+        <div class="device-reading">
+          <span class="device-reading-label">🔧</span>
+          <span class="device-reading-value">${formatPumpStatus(device.pump_active)}</span>
+        </div>
+      </div>
+      <div class="device-footer">
+        <span class="device-updated">Updated: ${lastUpdate}</span>
+      </div>
+    </div>
+  `;
 }
+
+async function loadDeviceOverview(){
+  try {
+    const sensors = await api.listSensors();
+    const uniqueDevices = getUniqueDevices(sensors);
+    
+    if (uniqueDevices.length === 0) {
+      $('#device-overview').innerHTML = '<div class="no-data">No device data available</div>';
+      return;
+    }
+    
+    $('#device-overview').innerHTML = uniqueDevices.map(deviceCardHtml).join('');
+  } catch (error) {
+    console.error('Failed to load device overview:', error);
+    $('#device-overview').innerHTML = '<div class="error">Failed to load device data</div>';
+  }
+}
+
 
 document.addEventListener('click', async (e) => {
-  const editId = e.target.getAttribute('data-edit');
   const delId = e.target.getAttribute('data-del');
+  const delWateringId = e.target.getAttribute('data-del-watering');
   
-  if(editId){
-    try {
-      const sensor = await api.getSensor(editId);
-      populateForm(sensor);
-    } catch (error) {
-      alert('Failed to load sensor data');
-    }
-  }else if(delId){
+  if(delId){
     if(confirm('Delete sensor reading #' + delId + '?')){
       try {
         await api.delSensor(delId);
         await loadTable($('#search').value.trim());
-        resetForm();
       } catch (error) {
         alert('Failed to delete sensor data');
+      }
+    }
+  }else if(delWateringId){
+    if(confirm('Delete watering record #' + delWateringId + '?')){
+      try {
+        await api.delWateringHistory(delWateringId);
+        await loadWateringTable($('#watering-search').value.trim());
+      } catch (error) {
+        alert('Failed to delete watering history');
       }
     }
   }
 });
 
-$('#sensor-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = $('#sensor-id').value;
-  const payload = formData();
-  
-  // Validate required fields
-  if(payload.temperature === null || payload.humidity === null || payload.lux === null){
-    alert('Temperature, humidity, and light level are required');
-    return;
-  }
-  
-  try {
-    if(id){
-      await api.updateSensor(id, payload);
-    }else{
-      await api.createSensor(payload);
-    }
-    await loadTable($('#search').value.trim());
-    resetForm();
-  } catch (error) {
-    alert('Failed to save sensor data');
-  }
-});
-
-$('#reset-btn').addEventListener('click', resetForm);
 
 $('#search').addEventListener('input', async (e) => {
   await loadTable(e.target.value.trim());
@@ -192,9 +245,18 @@ $('#refresh-btn').addEventListener('click', async () => {
   await loadTable($('#search').value.trim());
 });
 
+$('#watering-search').addEventListener('input', (e) => {
+  loadWateringTable(e.target.value.trim());
+});
+
+$('#watering-refresh-btn').addEventListener('click', async () => {
+  await loadWateringTable($('#watering-search').value.trim());
+});
+
 // Auto-refresh sensor data every 30 seconds
 setInterval(async () => {
   await loadTable($('#search').value.trim());
+  await loadDeviceOverview();
 }, 30000);
 
 // Auto-refresh pump status (including watering data) every 5 seconds (more frequent for real-time updates)
@@ -215,4 +277,6 @@ setInterval(async () => {
 (async function init(){
   await refreshHealth();
   await loadTable();
+  await loadDeviceOverview();
+  await loadWateringTable();
 })();
