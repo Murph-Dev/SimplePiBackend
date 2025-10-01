@@ -41,7 +41,7 @@ def test_watering_api(base_url):
     # Test 1: Get watering data (should create default if not exists)
     print("1. Testing GET watering data...")
     try:
-        response = requests.get(f"{base_url}/api/watering")
+        response = requests.get(f"{base_url}/api/watering/autogrow_esp32")
         if response.status_code == 200:
             watering_data = response.json()
             print("[OK] Watering data retrieved successfully!")
@@ -60,8 +60,11 @@ def test_watering_api(base_url):
     print("2. Testing UPDATE watering data...")
     update_data = {
         "pump_active": True,
+        "last_watering": "2024-01-15T10:30:00Z",
         "watering_duration": 45,
-        "auto_watering": False
+        "auto_watering": False,
+        "device_id": "autogrow_esp32",
+        "timestamp": 1234567890
     }
     
     try:

@@ -111,10 +111,16 @@ void updateWateringData(bool pump_active, bool update_last_watering) {
     doc["pump_active"] = pump_active;
     doc["watering_duration"] = watering_duration;
     doc["auto_watering"] = true;
+    doc["device_id"] = "autogrow_esp32";
+    doc["timestamp"] = millis() / 1000; // Current timestamp in seconds
     
     // Only update last_watering timestamp when starting watering
     if (update_last_watering && pump_active) {
-      doc["last_watering"] = millis() / 1000; // Current timestamp in seconds
+      // Convert current time to ISO format for last_watering
+      time_t now = time(nullptr);
+      char timeStr[25];
+      strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%SZ", gmtime(&now));
+      doc["last_watering"] = timeStr;
     }
     
     String jsonData;
@@ -156,7 +162,7 @@ void getWateringStatus() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     
-    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/watering";
+    String url = "http://" + String(server_ip) + ":" + String(server_port) + "/api/watering/autogrow_esp32";
     
     http.begin(url);
     int httpResponseCode = http.GET();

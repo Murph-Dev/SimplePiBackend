@@ -6,7 +6,7 @@ const api = {
   async createSensor(data){ const r = await fetch('/api/v1/sensor-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Create failed'); return r.json(); },
   async updateSensor(id,data){ const r = await fetch('/api/sensor-data/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update failed'); return r.json(); },
   async delSensor(id){ const r = await fetch('/api/sensor-data/'+id,{method:'DELETE'}); if(!r.ok) throw new Error('Delete failed'); return true; },
-  async getWatering(){ const r = await fetch('/api/watering'); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
+  async getWatering(deviceId = 'autogrow_esp32'){ const r = await fetch('/api/watering/' + deviceId); if(!r.ok) throw new Error('Get watering failed'); return r.json(); },
   async updateWatering(data){ const r = await fetch('/api/watering',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!r.ok) throw new Error('Update watering failed'); return r.json(); },
 };
 

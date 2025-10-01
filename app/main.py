@@ -96,12 +96,12 @@ def delete_sensor_data(sensor_id: int, session: Session = Depends(session_dep)):
     return
 
 # ------------------ Watering Data API ------------------
-@app.get("/api/watering", response_model=WateringData)
-def get_watering_data(session: Session = Depends(session_dep)):
-    watering_data = session.get(WateringData, 1)
+@app.get("/api/watering/{device_id}", response_model=WateringData)
+def get_watering_data(device_id: str, session: Session = Depends(session_dep)):
+    watering_data = session.get(WateringData, device_id)
     if not watering_data:
         # Create default watering data if it doesn't exist
-        watering_data = WateringData()
+        watering_data = WateringData(device_id=device_id)
         session.add(watering_data)
         session.commit()
         session.refresh(watering_data)
@@ -109,10 +109,13 @@ def get_watering_data(session: Session = Depends(session_dep)):
 
 @app.put("/api/watering", response_model=WateringData)
 def update_watering_data(payload: WateringDataUpdate, session: Session = Depends(session_dep)):
-    watering_data = session.get(WateringData, 1)
+    # Get device_id from payload, use default if not provided
+    device_id = payload.device_id or "default"
+    
+    watering_data = session.get(WateringData, device_id)
     if not watering_data:
         # Create new watering data if it doesn't exist
-        watering_data = WateringData()
+        watering_data = WateringData(device_id=device_id)
         session.add(watering_data)
         session.commit()
         session.refresh(watering_data)
@@ -120,10 +123,11 @@ def update_watering_data(payload: WateringDataUpdate, session: Session = Depends
     # Update fields
     data = payload.dict(exclude_unset=True)
     for k, v in data.items():
-        setattr(watering_data, k, v)
+        if k != "device_id":  # Don't update device_id after creation
+            setattr(watering_data, k, v)
     
-    # Update the updated_at timestamp
-    watering_data.updated_at = datetime.utcnow()
+    # Update the timestamp
+    watering_data.timestamp = datetime.utcnow().timestamp()
     
     session.add(watering_data)
     session.commit()

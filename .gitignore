@@ -3,3 +3,6 @@
 .venv/*
 db.sqlite
 app/__pycache__/*
+/app/__pycache__
+app/__pycache__/main.cpython-313.pyc
+app/__pycache__/main.cpython-313.pyc

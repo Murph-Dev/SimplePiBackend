@@ -36,22 +36,24 @@ class SensorDataUpdate(SQLModel):
     humidity: Optional[float] = None
     lux: Optional[float] = None  # Changed to float
     pump_active: Optional[bool] = None
-    timestamp: Optional[int] = None  # Changed from last_reading
+    timestamp: Optional[float] = None  # Changed from last_reading
     device_id: Optional[str] = None
     firmware_version: Optional[str] = None
     sensor_type: Optional[str] = None
 
 # Watering Data Model
 class WateringData(SQLModel, table=True):
-    id: Optional[int] = Field(default=1, primary_key=True)  # Single record
+    device_id: str = Field(primary_key=True, description="Device identifier")
     pump_active: bool = Field(default=False, description="Current pump status")
     last_watering: Optional[datetime] = Field(default=None, description="Last watering time")
     watering_duration: int = Field(default=30, description="Watering duration in seconds")
     auto_watering: bool = Field(default=True, description="Auto watering enabled")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update time")
+    timestamp: float = Field(default_factory=lambda: datetime.utcnow().timestamp(), description="Last update timestamp")
 
 class WateringDataUpdate(SQLModel):
     pump_active: Optional[bool] = None
     last_watering: Optional[datetime] = None
     watering_duration: Optional[int] = None
     auto_watering: Optional[bool] = None
+    device_id: Optional[str] = None
+    timestamp: Optional[float] = None

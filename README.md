@@ -52,7 +52,7 @@ The backend expects JSON data from your Arduino in this format:
 - `GET /api/health` - Health check
 
 ### Watering Control API
-- `GET /api/watering` - Get current watering status and settings
+- `GET /api/watering/{device_id}` - Get current watering status and settings for a device
 - `PUT /api/watering` - Update watering status and settings
 
 ## Quick Start
@@ -108,9 +108,11 @@ Your Arduino code should work with the new payload structure. The backend:
 
 The backend includes a watering control system that tracks:
 - **Pump Status**: Current state (active/inactive)
-- **Last Watering**: Timestamp of the last watering session
+- **Last Watering**: ISO timestamp of the last watering session
 - **Watering Duration**: How long the pump runs (in seconds)
 - **Auto Watering**: Whether automatic watering is enabled
+- **Device ID**: Identifier for the specific device
+- **Timestamp**: Unix timestamp of the last update
 
 ### Arduino Integration
 Your Arduino can control the watering system by sending PUT requests to `/api/watering`:
@@ -118,8 +120,11 @@ Your Arduino can control the watering system by sending PUT requests to `/api/wa
 ```json
 {
   "pump_active": true,
+  "last_watering": "2024-01-15T10:30:00Z",
   "watering_duration": 30,
-  "auto_watering": true
+  "auto_watering": true,
+  "device_id": "autogrow_esp32",
+  "timestamp": 1234567890
 }
 ```
 
